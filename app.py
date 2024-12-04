@@ -4,7 +4,7 @@ import numpy as np
 from PIL import Image
 
 
-# Function to resize image
+# function to resize image
 def resize_image(image, max_height=2000):
     height, width = image.shape[:2]
     if height > max_height:
@@ -24,7 +24,7 @@ def remove_text(image, kernel_size=(5, 5), iterations=3):
     # apply closing operation to remove small objects (text)
     closing = cv2.morphologyEx(gray, cv2.MORPH_CLOSE, kernel, iterations=iterations)
 
-    # Convert back to BGR for compatibility with further processing
+    # convert back to BGR for compatibility with further processing
     image_no_text = cv2.cvtColor(closing, cv2.COLOR_GRAY2BGR)
 
     return image_no_text
@@ -62,7 +62,7 @@ def detect_edges(image, low_threshold=50, high_threshold=150, aperture_size=3):
     # apply Canny edge detection
     edges = cv2.Canny(blurred, low_threshold, high_threshold, apertureSize=aperture_size)
 
-    # Dilate the edges to strengthen them (optional)
+    # dilate the edges to strengthen them (optional)
     kernel = np.ones((3, 3), np.uint8)
     edges = cv2.dilate(edges, kernel, iterations=1)
 
@@ -74,13 +74,13 @@ def find_document_contour(edges):
     # find contours in the edge-detected image
     contours, hierarchy = cv2.findContours(edges, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
 
-    # Sort the contours by area in descending order
+    # sort the contours by area in descending order
     contours = sorted(contours, key=cv2.contourArea, reverse=True)
 
-    # Initialize the document contour
+    # initialize the document contour
     document_contour = None
 
-     # Loop over the contours to find the one that approximates to a quadrilateral
+     # loop over the contours to find the one that approximates to a quadrilateral
     for contour in contours:
         # Approximate the contour
         peri = cv2.arcLength(contour, True)
