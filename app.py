@@ -5,7 +5,7 @@ from PIL import Image
 
 
 # function to resize image
-def resize_image(image, max_height=2000):
+def resize_image(image, max_height=800):
     height, width = image.shape[:2]
     if height > max_height:
         ratio = max_height / float(height)
@@ -18,7 +18,7 @@ def remove_text(image, kernel_size=(5, 5), iterations=3):
     # grayscale conversion
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
-    # create a kernal for mophological operations
+    # create a kernel for mophological operations
     kernel = np.ones(kernel_size, np.uint8)
 
     # apply closing operation to remove small objects (text)
@@ -32,6 +32,7 @@ def remove_text(image, kernel_size=(5, 5), iterations=3):
 def remove_background(image, iterations=5):
     # mask initialization
     mask = np.zeros(image.shape[:2], np.uint8)
+    print(f"remove_background: initial mask shape: {mask.shape}, dtype: {mask.dtype}")
 
     # models used by grabcut algorithm
     bgdModel = np.zeros((1, 65), np.float64)
@@ -39,16 +40,21 @@ def remove_background(image, iterations=5):
 
     # define the rectangle that contains the document
     height, width = image.shape[:2]
-    rect = (20,20, width - 40, height - 40)
+    rect = (20, 20, width - 40, height - 40)
+    print(f"remove_background: rect: {rect}")
 
     # apply grabcut algorithm
     cv2.grabCut(image, mask, rect, bgdModel, fgdModel, iterations, cv2.GC_INIT_WITH_RECT)
+    print(f"remove_background: mask after grabCut shape: {mask.shape}, dtype: {mask.dtype}")
 
-    # Create a mask where background pixels are set to 0, foreground to 1
+    # Create a mask where background pixels are set to 0, foreground to 1, this is where it gets slow
     mask2 = np.where((mask == 2) | (mask == 0), 0, 1).astype('uint8')
+    print(f"remove_background: mask2 shape: {mask2.shape}, dtype: {mask2.dtype}")
 
     # apply the mask to the image
     image_no_bg = image * mask2[:, :, np.newaxis]
+    print(f"remove_background: image_no_bg shape: {image_no_bg.shape}, dtype: {image_no_bg.dtype}")
+
 
     return image_no_bg
 
@@ -68,7 +74,7 @@ def detect_edges(image, low_threshold=50, high_threshold=150, aperture_size=3):
 
     return edges
 
-def find_document_contour(edges):
+def find_document_contour(edges, max_iterations=100):
     # finds the largest contour in the edge-detected image that approximates to a quadrilateral.
 
     # find contours in the edge-detected image
@@ -81,7 +87,9 @@ def find_document_contour(edges):
     document_contour = None
 
      # loop over the contours to find the one that approximates to a quadrilateral
-    for contour in contours:
+    for i, contour in enumerate(contours):
+        if i >= max_iterations:
+            break
         # Approximate the contour
         peri = cv2.arcLength(contour, True)
         approx = cv2.approxPolyDP(contour, 0.02* peri, True)
